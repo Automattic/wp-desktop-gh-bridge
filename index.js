@@ -129,7 +129,7 @@ handler.on('pull_request', function (event) {
             if ( response.statusCode === 200 ) {
                 wpDesktopBranchName = wpCalypsoBranchName;
             } else {
-                wpDesktopBranchName = 'master';
+                wpDesktopBranchName = 'develop';
             }
 
             const triggerBuildURL = `https://circleci.com/api/v1.1/project/github/${ wpDesktopProject }/tree/${ wpDesktopBranchName }?circle-token=${ process.env.CIRCLECI_SECRET}`;
