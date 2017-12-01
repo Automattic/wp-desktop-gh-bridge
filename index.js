@@ -15,6 +15,7 @@ const gitHubDesktopBranchURL = `https://api.github.com/repos/${ wpDesktopProject
 
 const gitHubWebHookPath = '/ghwebhook';
 const circleCIWebHookPath = '/circleciwebhook';
+const healthCheckPath = '/cache-healthcheck';
 
 const prContext = 'ci/wp-desktop';
 
@@ -28,6 +29,9 @@ http.createServer(function (req, res) {
             res.statusCode = 404;
             res.end('invalid location');
         });
+    } else if ( path === healthCheckPath ) {
+        res.statusCode = 200;
+        res.end( 'OK' );
     } else if ( path === circleCIWebHookPath ) {
         console.log( "Called from CircleCI" );
         let body = [];
