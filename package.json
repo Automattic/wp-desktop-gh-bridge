@@ -5,7 +5,8 @@
   "main": "index.js",
   "dependencies": {
     "github-webhook-handler": "0.6.0",
-    "request": "2.83.0"
+    "request": "2.83.0",
+    "request-promise-native": "1.0.5"
   },
   "devDependencies": {},
   "scripts": {
