@@ -129,6 +129,8 @@ handler.on( 'pull_request', function ( event ) {
     const loggedInUsername = event.payload.sender.login;
     const pullRequestHeadLabel = event.payload.pull_request.head.label;
     const repositoryName = event.payload.repository.full_name;
+    const labelsArray = event.payload.pull_request.labels;
+    let containsLabel;
 
 
     // Check if we should only run for certain users
@@ -155,20 +157,26 @@ handler.on( 'pull_request', function ( event ) {
         return true;
     }
 
-    if ( event.payload.action === 'labeled' && event.payload.label.name === triggerLabel ) {
+    if ( event.payload.action === 'synchronize' ) {
+        let filteredLabel = labelsArray.filter( label => label["name"] === triggerLabel );
+        containsLabel = filteredLabel.length > 0;
+    }
+
+    if ( ( event.payload.action === 'labeled' && event.payload.label.name === triggerLabel ) || containsLabel ) {
         const wpCalypsoBranchName = event.payload.pull_request.head.ref;
+        const desktopBranchName = 'tests/' + wpCalypsoBranchName;
         let wpDesktopBranchName;
         console.log( 'Executing wp-desktop tests for wp-calypso branch: \'' + wpCalypsoBranchName + '\'' );
 
         // Check if there's a matching branch in the wp-desktop repository
         request.get( {
             headers: {Authorization: 'token ' + process.env.GITHUB_SECRET, 'User-Agent': 'wp-desktop-gh-bridge'},
-            url: gitHubDesktopBranchURL + wpCalypsoBranchName
+            url: gitHubDesktopBranchURL + desktopBranchName
         } )
         .then ( function( response ) {
 
             if ( response.statusCode === 200 ) {
-                wpDesktopBranchName = wpCalypsoBranchName;
+                wpDesktopBranchName = desktopBranchName;
             } else {
                 // Get sha for develop branch
                 return request.get( {
@@ -182,7 +190,7 @@ handler.on( 'pull_request', function ( event ) {
                     // Create branch for tests to run from
                     if ( response.statusCode === 200 ) {
                         const branch_parameters = {
-                            ref: 'refs/heads/tests/' + wpCalypsoBranchName,
+                            ref: 'refs/heads/' + desktopBranchName,
                             sha: JSON.parse( response.body ).object.sha
                         };
                         return request.post( {
@@ -195,7 +203,7 @@ handler.on( 'pull_request', function ( event ) {
                         } )
                         .then( function( response ) {
                             if ( response.statusCode === 201 ) {
-                                wpDesktopBranchName = 'tests/' + wpCalypsoBranchName;
+                                wpDesktopBranchName = desktopBranchName;
                             } else {
                                 console.log( 'ERROR: Unable to create new branch. Failed with error:' + response.body );
                             }
