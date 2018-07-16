@@ -174,9 +174,35 @@ handler.on( 'pull_request', function ( event ) {
             url: gitHubDesktopBranchURL + desktopBranchName
         } )
         .then ( function( response ) {
-
             if ( response.statusCode === 200 ) {
                 wpDesktopBranchName = desktopBranchName;
+                // Get sha for develop branch
+                return request.get( {
+                    headers: {
+                        Authorization: 'token ' + process.env.GITHUB_SECRET,
+                        'User-Agent': 'wp-desktop-gh-bridge'
+                    },
+                    url: gitHubDesktopHeadsURL + 'develop'
+                } )
+                .then( function( response ) {
+                     // Update branch if we can
+                    const branch_parameters = {
+                        sha: JSON.parse( response.body ).object.sha
+                    };
+                    return request.patch( {
+                        headers: {
+                            Authorization: 'token ' + process.env.GITHUB_SECRET,
+                            'User-Agent': 'wp-desktop-gh-bridge'
+                        },
+                        url: gitHubDesktopHeadsURL + wpDesktopBranchName,
+                        body: JSON.stringify( branch_parameters )
+                    } )
+                    .then( function( response ) {
+                        if ( response.statusCode !== 200 ) {
+                            console.log( 'ERROR: Unable to update existing branch. Failed with error:' + response.body );
+                        }
+                    } )
+                } );
             } else {
                 // Get sha for develop branch
                 return request.get( {
