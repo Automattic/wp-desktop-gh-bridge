@@ -2,6 +2,7 @@ const http = require ( 'http' );
 const rp = require ( 'request-promise-native' );
 const createHandler = require ( 'github-webhook-handler' );
 const url = require( 'url' );
+const { logger } = require( '@automattic/vip-go' );
 
 const calypsoProject = process.env.CALYPSO_PROJECT || 'Automattic/wp-calypso';
 const wpDesktopProject = process.env.DESKTOP_PROJECT || 'Automattic/wp-desktop';
@@ -21,6 +22,7 @@ const healthCheckPath = '/cache-healthcheck';
 
 const prContext = 'ci/wp-desktop';
 
+const log = logger( 'wp-desktop-gh-bridge:webhook' );
 const handler = createHandler( { path: gitHubWebHookPath, secret: process.env.BRIDGE_SECRET } );
 const request = rp.defaults( {
     simple:false,
@@ -39,7 +41,7 @@ http.createServer( function (req, res) {
         res.statusCode = 200;
         res.end( 'OK' );
     } else if ( path === circleCIWebHookPath ) {
-        console.log( "Called from CircleCI" );
+        log.debug( "Called from CircleCI" );
         let body = [];
         req.on( 'data', function( chunk ) {
             body.push( chunk );
@@ -66,14 +68,14 @@ http.createServer( function (req, res) {
                             } )
                             .then( function( response ) {
                                 if ( response.statusCode !== 204 ) {
-                                    console.log( 'ERROR: Branch delete failed with error: ' + response.body );
+                                    log.error( 'ERROR: Branch delete failed with error: ' + response.body );
                                 } else {
-                                    console.log( 'Branch ' + branch + ' deleted' );
+                                    log.info( 'Branch ' + branch + ' deleted' );
                                 }
 
                             } )
                             .catch( function( error ) {
-                                console.log( 'ERROR: Branch delete failed with error: ' + error )
+                                log.error( 'ERROR: Branch delete failed with error: ' + error )
                             } )
                         }
                     } else if ( payload.outcome === 'failed' ) {
@@ -97,30 +99,30 @@ http.createServer( function (req, res) {
                     } )
                     .then( function( response ) {
                         if ( response.statusCode !== 201 ) {
-                            console.log( 'ERROR: ' + response.body );
+                            log.error( 'ERROR: ' + response.body );
                         } else {
-                            console.log( 'GitHub status updated' );
+                            log.debug( 'GitHub status updated' );
                         }
                     } )
                     .catch( function( error ) {
-                        console.log( 'ERROR: ' + error )
+                        log.error( 'ERROR: ' + error )
                     } )
                 }
             } catch ( e ) {
-                console.log( 'Non-CircleCI packet received' );
+                log.info( 'Non-CircleCI packet received' );
             }
             res.statusCode = 200;
             res.end( 'ok' );
         } );
     } else {
-        console.log( 'unknown location', fullUrl );
+        log.error( 'unknown location %s', fullUrl );
         res.statusCode = 404;
         res.end( 'no such location' );
     }
 } ).listen( process.env.PORT || 7777 );
 
 handler.on( 'error', function ( err ) {
-    console.error( 'Error:', err.message );
+    log.error( 'Error: %s', err.message );
 } );
 
 handler.on( 'pull_request', function ( event ) {
@@ -135,25 +137,25 @@ handler.on( 'pull_request', function ( event ) {
 
     // Check if we should only run for certain users
     if ( flowPatrolOnly === 'true' && flowPatrolUsernames.indexOf( loggedInUsername ) === -1 ) {
-        console.log( `Ignoring pull request '${ pullRequestNum }' as we're only running for certain users and '${ loggedInUsername }' is not in '${ flowPatrolUsernames }'` );
+        log.info( `Ignoring pull request '${ pullRequestNum }' as we're only running for certain users and '${ loggedInUsername }' is not in '${ flowPatrolUsernames }'` );
         return true;
     }
 
     // Make sure the PR is in the correct repository
     if ( repositoryName !== calypsoProject ) {
-        console.log( `Ignoring pull request '${ pullRequestNum }' as the repository '${ repositoryName }' is not '${ calypsoProject }'` );
+        log.info( `Ignoring pull request '${ pullRequestNum }' as the repository '${ repositoryName }' is not '${ calypsoProject }'` );
         return true;
     }
 
     // Make sure the PR is still open
     if ( pullRequestStatus !== 'open' ) {
-        console.log( `Ignoring pull request '${ pullRequestNum }' as the status '${ pullRequestStatus }' is not 'open'` );
+        log.info( `Ignoring pull request '${ pullRequestNum }' as the status '${ pullRequestStatus }' is not 'open'` );
         return true;
     }
 
     // Ignore OSS requests - check for location of head to indicate forks
     if ( event.payload.pull_request.head.label.indexOf( 'Automattic:' ) !== 0 ) {
-        console.log( `Ignoring pull request '${ pullRequestNum }' as this is from a fork: '${ pullRequestHeadLabel }'` );
+        log.info( `Ignoring pull request '${ pullRequestNum }' as this is from a fork: '${ pullRequestHeadLabel }'` );
         return true;
     }
 
@@ -166,7 +168,7 @@ handler.on( 'pull_request', function ( event ) {
         const wpCalypsoBranchName = event.payload.pull_request.head.ref;
         const desktopBranchName = 'tests/' + wpCalypsoBranchName;
         let wpDesktopBranchName;
-        console.log( 'Executing wp-desktop tests for wp-calypso branch: \'' + wpCalypsoBranchName + '\'' );
+        log.info( 'Executing wp-desktop tests for wp-calypso branch: \'' + wpCalypsoBranchName + '\'' );
 
         // Check if there's a matching branch in the wp-desktop repository
         request.get( {
@@ -199,7 +201,7 @@ handler.on( 'pull_request', function ( event ) {
                     } )
                     .then( function( response ) {
                         if ( response.statusCode !== 200 ) {
-                            console.log( 'ERROR: Unable to update existing branch. Failed with error:' + response.body );
+                            log.error( 'ERROR: Unable to update existing branch. Failed with error:' + response.body );
                         }
                     } )
                 } );
@@ -231,11 +233,11 @@ handler.on( 'pull_request', function ( event ) {
                             if ( response.statusCode === 201 ) {
                                 wpDesktopBranchName = desktopBranchName;
                             } else {
-                                console.log( 'ERROR: Unable to create new branch. Failed with error:' + response.body );
+                                log.error( 'ERROR: Unable to create new branch. Failed with error:' + response.body );
                             }
                         } )
                     } else {
-                        console.log( 'ERROR: Unable to get details for "develop" branch. Failed with error:' + response.body );
+                        log.error( 'ERROR: Unable to get details for "develop" branch. Failed with error:' + response.body );
                         wpDesktopBranchName = 'develop';
                     }
                 } )
@@ -264,7 +266,7 @@ handler.on( 'pull_request', function ( event ) {
             } )
             .then( function( response ) {
                 if ( response.statusCode === 201 ) {
-                    console.log( 'Tests have been kicked off - updating PR status now' );
+                    log.debug( 'Tests have been kicked off - updating PR status now' );
                     // Post status to Github
                     const gitHubStatus = {
                         state: 'pending',
@@ -282,21 +284,20 @@ handler.on( 'pull_request', function ( event ) {
                     } )
                     .then( function( response ) {
                         if ( response.statusCode !== 201 ) {
-                            console.log( 'ERROR: ' + response.body );
+                            log.error( 'ERROR: ' + response.body );
                         }
-                        console.log( 'GitHub status updated' );
+                        log.debug( 'GitHub status updated' );
                     } );
                 }
                 else {
                     // Something went wrong - TODO: post message to the Pull Request about
-                    console.log( 'Something went wrong with executing wp-desktop tests' );
-                    console.log( 'ERROR::' + error );
-                    console.log( 'RESPONSE::' + JSON.stringify( response ) );
+                    log.error( 'Something went wrong with executing wp-desktop tests' );
+                    log.error( 'ERROR:: %s RESPONSE:: %s', error, JSON.stringify( response ) );
                 }
             } );
         } )
         .catch( function ( err ) {
-            console.log( err );
+            log.error( err );
         } );
     }
 });
