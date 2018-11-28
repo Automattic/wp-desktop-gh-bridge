@@ -4,7 +4,7 @@
   "description": "A bridge to link the wp-calypso repository to the wp-desktop unit tests",
   "main": "index.js",
   "dependencies": {
-    "@automattic/vip-go": "0.1.0",
+    "@automattic/vip-go": "0.2.1",
     "github-webhook-handler": "0.6.0",
     "request": "^2.87.0",
     "request-promise-native": "1.0.5"
