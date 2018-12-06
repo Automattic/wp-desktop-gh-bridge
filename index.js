@@ -9,7 +9,7 @@ const wpDesktopProject = process.env.DESKTOP_PROJECT || 'Automattic/wp-desktop';
 const flowPatrolOnly = process.env.FLOW_PATROL_ONLY || 'false';
 
 const flowPatrolUsernames = [ 'alisterscott', 'brbrr', 'bsessions85', 'hoverduck', 'rachelmcr', 'designsimply', 'astralbodies' ];
-const triggerLabel = process.env.TRIGGER_LABEL || '[Status] Needs Review';
+const triggerLabel = process.env.TRIGGER_LABEL || '[Status] Needs e2e Testing';
 
 const gitHubStatusURL = `https://api.github.com/repos/${ calypsoProject }/statuses/`;
 const gitHubDesktopBranchURL = `https://api.github.com/repos/${ wpDesktopProject }/branches/`;
