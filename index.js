@@ -245,13 +245,13 @@ handler.on( 'pull_request', function ( event ) {
         } )
         .then ( function () {
 
-            const triggerBuildURL = `https://circleci.com/api/v1.1/project/github/${ wpDesktopProject }/tree/${ wpDesktopBranchName }?circle-token=${ process.env.CIRCLECI_SECRET}`;
+            const triggerBuildURL = `https://circleci.com/api/v2/project/github/${ wpDesktopProject }/pipeline`;
 
             const sha = event.payload.pull_request.head.sha;
 
             const buildParameters = {
-                build_parameters: {
-                    BRANCHNAME: wpDesktopBranchName,
+                branch: wpDesktopBranchName,
+                parameters: {
                     sha: sha,
                     CALYPSO_HASH: sha,
                     pullRequestNum: pullRequestNum,
@@ -260,6 +260,9 @@ handler.on( 'pull_request', function ( event ) {
             };
             // POST to CircleCI to initiate the build
             return request.post( {
+                auth: {
+                    username: `${ process.env.CIRCLECI_SECRET }`
+                },
                 headers: { 'content-type': 'application/json', accept: 'application/json' },
                 url: triggerBuildURL,
                 body: JSON.stringify( buildParameters )
