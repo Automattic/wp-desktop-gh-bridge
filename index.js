@@ -254,7 +254,6 @@ handler.on( 'pull_request', function ( event ) {
                 parameters: {
                     sha: sha,
                     CALYPSO_HASH: sha,
-                    pullRequestNum: pullRequestNum,
                     calypsoProject: calypsoProject
                 }
             };
