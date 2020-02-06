@@ -15,6 +15,8 @@ const gitHubStatusURL = `https://api.github.com/repos/${ calypsoProject }/status
 const gitHubDesktopBranchURL = `https://api.github.com/repos/${ wpDesktopProject }/branches/`;
 const gitHubDesktopRefsURL = `https://api.github.com/repos/${ wpDesktopProject }/git/refs`;
 const gitHubDesktopHeadsURL = `${ gitHubDesktopRefsURL }/heads/`;
+const circleCIGetWorkflowURL = 'https://circleci.com/api/v2/pipeline/';
+const circleCIWorkflowURL = 'https://circleci.com/workflow-run/';
 
 const gitHubWebHookPath = '/ghwebhook';
 const circleCIWebHookPath = '/circleciwebhook';
@@ -28,6 +30,12 @@ const request = rp.defaults( {
     simple:false,
     resolveWithFullResponse: true
 } );
+
+function sleep( ms ) {
+    return new Promise( resolve=>{
+        setTimeout( resolve, ms )
+    } )
+}
 
 http.createServer( function (req, res) {
     const fullUrl = req.url;
@@ -265,41 +273,59 @@ handler.on( 'pull_request', function ( event ) {
                 headers: { 'content-type': 'application/json', accept: 'application/json' },
                 url: triggerBuildURL,
                 body: JSON.stringify( buildParameters )
-            } )
-            .then( function( response ) {
-                if ( response.statusCode === 201 ) {
-                    log.debug( 'Tests have been kicked off - updating PR status now' );
-                    // Post status to Github
-                    const gitHubStatus = {
-                        state: 'pending',
-                        target_url: JSON.parse( response.body ).build_url,
-                        context: prContext,
-                        description: 'The wp-desktop tests are running against your PR'
-                    };
-                    return request.post( {
-                        headers: {
-                            Authorization: 'token ' + process.env.GITHUB_SECRET,
-                            'User-Agent': 'wp-desktop-gh-bridge'
-                        },
-                        url: gitHubStatusURL + sha,
-                        body: JSON.stringify( gitHubStatus )
-                    } )
-                    .then( function( response ) {
-                        if ( response.statusCode !== 201 ) {
-                            log.error( 'ERROR: ' + response.body );
-                        }
-                        log.debug( 'GitHub status updated' );
-                    } );
+            } ).then( async function( response ) {
+                if (response.statusCode === 201) {
+                    let workflowID;
+                    let getWorkflowURL = circleCIGetWorkflowURL + JSON.parse(response.body).id + `/workflow`;
+                    let workflowFound = false;
+                    let i = 0;
+
+                    // Get workflow ID and update GH when we have one
+                    while (i < 60 && !workflowFound) {
+                        await sleep(1000);
+                        await request.get({
+                            auth: {
+                                username: `${ process.env.CIRCLECI_SECRET }`
+                            },
+                            headers: {'content-type': 'application/json', accept: 'application/json'},
+                            url: getWorkflowURL,
+                        }, async function (responseError, responseCI) {
+                            if (responseError) {
+                                log.error('Error when getting workflow ID');
+                                log.error('ERROR: ' + responseError);
+                            }
+                            //Make sure a workflow id was returned
+                            let workflows = JSON.parse(responseCI.body).items;
+                            if (workflows.length === 0) {
+                                return;
+                            }
+                            workflowID = workflows[0].id;
+                            workflowFound = true;
+                            // Post status to Github
+                            const gitHubStatus = {
+                                state: 'pending',
+                                target_url: circleCIWorkflowURL + workflowID,
+                                context: prContext,
+                                description: 'The wp-desktop tests are running against your PR'
+                            };
+                            return request.post({
+                                headers: {
+                                    Authorization: 'token ' + process.env.GITHUB_SECRET,
+                                    'User-Agent': 'wp-desktop-gh-bridge'
+                                },
+                                url: gitHubStatusURL + sha,
+                                body: JSON.stringify(gitHubStatus)
+                            }).then(function (response) {
+                                if (response.statusCode !== 201) {
+                                    log.error('ERROR: ' + response.body);
+                                }
+                                log.debug('GitHub status updated');
+                            });
+                        });
+                        i++;
+                    }
                 }
-                else {
-                    // Something went wrong - TODO: post message to the Pull Request about
-                    log.error( 'Something went wrong with executing wp-desktop tests' );
-                    log.error( 'ERROR:: %s RESPONSE:: %s', error, JSON.stringify( response ) );
-                }
-            } );
+            }  )
         } )
-        .catch( function ( err ) {
-            log.error( err );
-        } );
     }
 });
