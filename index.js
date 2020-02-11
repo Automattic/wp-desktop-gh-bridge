@@ -262,7 +262,8 @@ handler.on( 'pull_request', function ( event ) {
                 parameters: {
                     sha: sha,
                     CALYPSO_HASH: sha,
-                    calypsoProject: calypsoProject
+                    calypsoProject: calypsoProject,
+                    isCalypsoCanaryRun: true
                 }
             };
             // POST to CircleCI to initiate the build
