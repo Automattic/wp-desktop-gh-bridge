@@ -34,6 +34,10 @@ function makeRandom(length) {
     return result;
 }
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 const prContext = 'ci/wp-desktop';
 
 const log = logger( 'wp-desktop-gh-bridge:webhook' );
@@ -285,7 +289,7 @@ handler.on( 'pull_request', function ( event ) {
                 } )
             }
         } )
-        .then ( function () {
+        .then ( async function () {
 
             const triggerBuildURL = `https://circleci.com/api/v2/project/github/${ wpDesktopProject }/pipeline`;
 
@@ -301,6 +305,7 @@ handler.on( 'pull_request', function ( event ) {
                 }
             };
             // POST to CircleCI to initiate the build
+            await sleep(5000);
             return request.post( {
                 auth: {
                     username: `${ process.env.CIRCLECI_SECRET }`
