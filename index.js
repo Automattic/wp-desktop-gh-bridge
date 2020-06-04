@@ -259,7 +259,7 @@ handler.on( 'pull_request', function ( event ) {
                                     message: `create canary patch for ${wpDesktopBranchName}`,
                                     branch: `${wpDesktopBranchName}`,
                                     content: Buffer.from(makeRandom(20)).toString('base64'), // patch needs to be base64-encoded
-                                }
+                                };
 
                                 request.put({
                                     headers: { Authorization: 'token ' + process.env.GITHUB_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
@@ -269,7 +269,7 @@ handler.on( 'pull_request', function ( event ) {
                                     .then(function (response) {
                                         if (response.statusCode === 201) {
                                             const desktopBranchSha = JSON.parse(response.body).commit.sha;
-                                            log.info( `Branch '{wpDesktopBranchName}' patched with SHA: ${desktopBranchSha}`);
+                                            log.info( `Branch '${wpDesktopBranchName}' patched with SHA: ${desktopBranchSha}`);
                                         } else {
                                             log.error( 'ERROR: Unable to patch new branch. Failed with error: ' + response.body );
                                         }
