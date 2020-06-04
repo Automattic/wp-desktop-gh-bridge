@@ -13,6 +13,7 @@ const triggerLabel = process.env.TRIGGER_LABEL || '[Status] Needs Review';
 
 const gitHubStatusURL = `https://api.github.com/repos/${ calypsoProject }/statuses/`;
 const gitHubDesktopBranchURL = `https://api.github.com/repos/${ wpDesktopProject }/branches/`;
+const gitHubDesktopCreateFileURL = `https://api.github.com/repos/${wpDesktopProject}/contents/desktop-canary-bridge.patch`;
 const gitHubDesktopRefsURL = `https://api.github.com/repos/${ wpDesktopProject }/git/refs`;
 const gitHubDesktopHeadsURL = `${ gitHubDesktopRefsURL }/heads/`;
 const circleCIGetWorkflowURL = 'https://circleci.com/api/v2/pipeline/';
@@ -21,6 +22,17 @@ const circleCIWorkflowURL = 'https://circleci.com/workflow-run/';
 const gitHubWebHookPath = '/ghwebhook';
 const circleCIWebHookPath = '/circleciwebhook';
 const healthCheckPath = '/cache-healthcheck';
+
+// Helper to generate randomized content patches
+function makeRandom(length) {
+    var result = '';
+    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for (var i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
 
 const prContext = 'ci/wp-desktop';
 
@@ -240,6 +252,28 @@ handler.on( 'pull_request', function ( event ) {
                         .then( function( response ) {
                             if ( response.statusCode === 201 ) {
                                 wpDesktopBranchName = desktopBranchName;
+
+                                // Patch the newly-created branch so it has a different SHA from develop
+                                // to minimize interference of CI status and cancellations between branches.
+                                const desktopBranchPatchParameters = {
+                                    message: `create canary patch for ${wpDesktopBranchName}`,
+                                    branch: `${wpDesktopBranchName}`,
+                                    content: Buffer.from(makeRandom(20)).toString('base64'), // patch needs to be base64-encoded
+                                }
+
+                                request.put({
+                                    headers: { Authorization: 'token ' + process.env.GITHUB_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
+                                    url: gitHubDesktopCreateFileURL,
+                                    body: JSON.stringify(desktopBranchPatchParameters),
+                                })
+                                    .then(function (response) {
+                                        if (response.statusCode === 201) {
+                                            const desktopBranchSha = JSON.parse(response.body).commit.sha;
+                                            log.info( `Branch '{wpDesktopBranchName}' patched with SHA: ${desktopBranchSha}`);
+                                        } else {
+                                            log.error( 'ERROR: Unable to patch new branch. Failed with error: ' + response.body );
+                                        }
+                                    })
                             } else {
                                 log.error( 'ERROR: Unable to create new branch. Failed with error:' + response.body );
                             }
