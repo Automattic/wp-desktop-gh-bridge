@@ -294,6 +294,7 @@ handler.on( 'pull_request', function ( event ) {
             const triggerBuildURL = `https://circleci.com/api/v2/project/github/${ wpDesktopProject }/pipeline`;
 
             const sha = event.payload.pull_request.head.sha;
+            const prUserName = event.payload.pull_request.user.login;
 
             const buildParameters = {
                 branch: wpDesktopBranchName,
@@ -301,7 +302,8 @@ handler.on( 'pull_request', function ( event ) {
                     sha: sha,
                     CALYPSO_HASH: sha,
                     calypsoProject: calypsoProject,
-                    isCalypsoCanaryRun: true
+                    isCalypsoCanaryRun: true,
+                    pullRequestUserName: prUserName
                 }
             };
             // POST to CircleCI to initiate the build
