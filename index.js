@@ -138,7 +138,7 @@ http.createServer( function (req, res) {
                                     url: getReviewsURL
                                 } )
                                 .then( function( response ) {
-                                    if ( response.statusCode !== '200' ) {
+                                    if ( response.statusCode !== 200 ) {
                                         log.error( 'ERROR fetching reviews for PR: ', pullRequestNum );
                                     } else {
                                         const reviews = JSON.parse( response.body );
@@ -166,7 +166,7 @@ http.createServer( function (req, res) {
                                                 body: JSON.stringify(createReviewParameters),
                                             })
                                             .then( function( response ) {
-                                                if ( response.statusCode !== '200' ) {
+                                                if ( response.statusCode !== 200 ) {
                                                     log.error( 'ERROR creating review for PR: ', pullRequestNum );
                                                 }
                                             } );
@@ -181,7 +181,7 @@ http.createServer( function (req, res) {
                                     url: getReviewsURL
                                 } )
                                 .then( function( response ) {
-                                    if ( response.statusCode !== '200' ) {
+                                    if ( response.statusCode !== 200 ) {
                                         log.error( 'ERROR fetching reviews for PR: ', pullRequestNum );
                                     } else {
                                         const reviews = JSON.parse( response.body );
@@ -195,7 +195,7 @@ http.createServer( function (req, res) {
 
                                                     request.put( dismissReviewURL )
                                                     .then( function( response ) {
-                                                        if ( response.statusCode !== '200' ) {
+                                                        if ( response.statusCode !== 200 ) {
                                                             log.error( `Failed to dismiss review for PR: ${ pullRequestNum } with ID: `, reviewId );
                                                         }
                                                     } );
