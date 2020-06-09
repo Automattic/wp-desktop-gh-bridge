@@ -14,7 +14,7 @@ const triggerLabel = process.env.TRIGGER_LABEL || '[Status] Needs Review';
 const gitHubStatusURL = `https://api.github.com/repos/${ calypsoProject }/statuses/`;
 const gitHubDesktopBranchURL = `https://api.github.com/repos/${ wpDesktopProject }/branches/`;
 const gitHubDesktopCreateFileURL = `https://api.github.com/repos/${wpDesktopProject}/contents/desktop-canary-bridge.patch`;
-const gitHubReviewsURL = `https://api.github.com/repos/${wpCalypsoProject}/pulls`; // append :pull_number/reviews
+const gitHubReviewsURL = `https://api.github.com/repos/${calypsoProject}/pulls`; // append :pull_number/reviews
 const gitHubDesktopRefsURL = `https://api.github.com/repos/${ wpDesktopProject }/git/refs`;
 const gitHubDesktopHeadsURL = `${ gitHubDesktopRefsURL }/heads/`;
 const circleCIGetWorkflowURL = 'https://circleci.com/api/v2/pipeline/';
@@ -129,8 +129,8 @@ http.createServer( function (req, res) {
                         } else {
                             log.debug( 'GitHub status updated' );
 
-                            // if payload.status === 'failure', create a PR review
-                            if ( payload.status === 'failure' ) {
+                            // if payload.status === 'failed', create a PR review
+                            if ( payload.status === 'failed' ) {
                                 // check for existing reviews
                                 const getReviewsURL = gitHubReviewsURL + `/${pullRequestNum}/reviews`;
                                 request.get( {
