@@ -157,7 +157,6 @@ http.createServer( function (req, res) {
                                         if ( ! alreadyReviewed ) {
                                             const createReviewURL = gitHubReviewsURL + `/${pullRequestNum}/reviews`;
                                             const createReviewParameters = {
-                                                commit_id: payload.sha,
                                                 body: 'WordPress Desktop CI Failure: Please Review this PR for breaking changes.',
                                                 event: 'REQUEST_CHANGES',
                                             }
