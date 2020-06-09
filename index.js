@@ -193,7 +193,11 @@ http.createServer( function (req, res) {
 
                                                     const dismissReviewURL = gitHubReviewsURL + `/${pullRequestNum}/reviews/${reviewId}/dismissals`;
 
-                                                    request.put( dismissReviewURL )
+                                                    request.put( {
+                                                        headers: { Authorization: 'token ' + process.env.GITHUB_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
+                                                        url: dismissReviewURL,
+                                                        body: JSON.stringify( { message: 'ci/wp-desktop CI is passing, closing review' } ),
+                                                    } )
                                                     .then( function( response ) {
                                                         if ( response.statusCode !== 200 ) {
                                                             log.error( `Failed to dismiss review for PR: ${ pullRequestNum } with ID: `, reviewId );
