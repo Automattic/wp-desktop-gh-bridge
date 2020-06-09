@@ -14,6 +14,7 @@ const triggerLabel = process.env.TRIGGER_LABEL || '[Status] Needs Review';
 const gitHubStatusURL = `https://api.github.com/repos/${ calypsoProject }/statuses/`;
 const gitHubDesktopBranchURL = `https://api.github.com/repos/${ wpDesktopProject }/branches/`;
 const gitHubDesktopCreateFileURL = `https://api.github.com/repos/${wpDesktopProject}/contents/desktop-canary-bridge.patch`;
+const gitHubReviewsURL = `https://api.github.com/repos/${wpCalypsoProject}/pulls`; // append :pull_number/reviews
 const gitHubDesktopRefsURL = `https://api.github.com/repos/${ wpDesktopProject }/git/refs`;
 const gitHubDesktopHeadsURL = `${ gitHubDesktopRefsURL }/heads/`;
 const circleCIGetWorkflowURL = 'https://circleci.com/api/v2/pipeline/';
@@ -75,6 +76,7 @@ http.createServer( function (req, res) {
                 let payload = JSON.parse( body ).payload;
                 if ( payload && payload.build_parameters && payload.build_parameters.sha && payload.build_parameters.calypsoProject === calypsoProject ) {
                     let status, desc;
+                    const pullRequestNum = payload.build_parameters.pullRequestNum;
                     if ( payload.outcome === 'success' ) {
                         status = 'success';
                         desc = 'Your PR passed the wp-desktop tests on CircleCI!';
@@ -126,6 +128,84 @@ http.createServer( function (req, res) {
                             log.error( 'ERROR: ' + response.body );
                         } else {
                             log.debug( 'GitHub status updated' );
+
+                            // if payload.status === 'failure', create a PR review
+                            if ( payload.status === 'failure' ) {
+                                // check for existing reviews
+                                const getReviewsURL = gitHubReviewsURL + `/${payload.pullRequestNum}/reviews`;
+                                request.get( {
+                                    headers: { Authorization: 'token ' + process.env.GITHUB_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
+                                    url: getReviewsURL
+                                } )
+                                .then( function( response ) {
+                                    if ( response.statusCode !== '200' ) {
+                                        log.error( 'ERROR fetching reviews for PR: ', payload.pullRequestNum );
+                                    } else {
+                                        let alreadyReviewed = false;
+                                        const reviews = JSON.parse( response.body );
+                                        if ( reviews.length > 0 ) {
+                                            for ( i = 0; i < reviews.length; i++ ) {
+                                                const review = reviews[i];
+                                                if ( review.user.login === 'matticbot' ) {
+                                                    alreadyReviewed = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        // if there are no existing reviews, then create one
+                                        if ( ! alreadyReviewed ) {
+                                            const createReviewURL = gitHubReviewsURL + `/${payload.pullRequestNum}/reviews`;
+                                            const createReviewParameters = {
+                                                commit_id: payload.sha,
+                                                body: 'WordPress Desktop CI Failure: Please Review this PR for breaking changes.',
+                                                event: 'REQUEST_CHANGES',
+                                            }
+                                            request.post( {
+                                                headers: { Authorization: 'token ' + process.env.GITHUB_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
+                                                url: createReviewURL,
+                                                body: JSON.stringify(createReviewParameters),
+                                            })
+                                            .then( function( response ) {
+                                                if ( response.statusCode !== '200' ) {
+                                                    log.error( 'ERROR creating review for PR: ', payload.pullRequestNum );
+                                                }
+                                            } );
+                                        }
+                                    }
+                                } );
+                            } else if ( payload.status === 'success' ) {
+                                // if payload.status === 'success, delete existing review (if any)
+                                const getReviewsURL = gitHubReviewsURL + `/${payload.pullRequestNum}/reviews`;
+                                request.get( {
+                                    headers: { Authorization: 'token ' + process.env.GITHUB_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
+                                    url: getReviewsURL
+                                } )
+                                .then( function( response ) {
+                                    if ( response.statusCode !== '200' ) {
+                                        log.error( 'ERROR fetching reviews for PR: ', payload.pullRequestNum );
+                                    } else {
+                                        const reviews = JSON.parse( response.body );
+                                        if ( reviews.length > 0 ) {
+                                            for ( i = 0; i < reviews.length; i++ ) {
+                                                const review = reviews[i];
+                                                if ( review.user.login === 'matticbot' ) {
+                                                    const reviewId = review.id;
+
+                                                    const dismissReviewURL = gitHubReviewsURL + `/${payload.pullRequestNum}/reviews/${reviewId}/dismissals`;
+
+                                                    request.put( dismissReviewURL )
+                                                    .then( function( response ) {
+                                                        if ( response.statusCode !== '200' ) {
+                                                            log.error( `Failed to dismiss review for PR: ${ payload.pullRequestNum } with ID: `, reviewId );
+                                                        }
+                                                    } );
+                                                }
+                                            }
+                                        }
+                                    }
+                                } );
+                            }
                         }
                     } )
                     .catch( function( error ) {
