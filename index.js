@@ -188,7 +188,7 @@ http.createServer( function (req, res) {
                                         if ( reviews.length > 0 ) {
                                             for ( i = 0; i < reviews.length; i++ ) {
                                                 const review = reviews[i];
-                                                if ( review.user.login === 'matticbot' ) {
+                                                if ( review.user.login === 'matticbot' && review.state !== 'DISMISSED' ) {
                                                     const reviewId = review.id;
 
                                                     const dismissReviewURL = gitHubReviewsURL + `/${pullRequestNum}/reviews/${reviewId}/dismissals`;
