@@ -132,17 +132,17 @@ http.createServer( function (req, res) {
                             // if payload.status === 'failure', create a PR review
                             if ( payload.status === 'failure' ) {
                                 // check for existing reviews
-                                const getReviewsURL = gitHubReviewsURL + `/${payload.pullRequestNum}/reviews`;
+                                const getReviewsURL = gitHubReviewsURL + `/${pullRequestNum}/reviews`;
                                 request.get( {
                                     headers: { Authorization: 'token ' + process.env.GITHUB_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
                                     url: getReviewsURL
                                 } )
                                 .then( function( response ) {
                                     if ( response.statusCode !== '200' ) {
-                                        log.error( 'ERROR fetching reviews for PR: ', payload.pullRequestNum );
+                                        log.error( 'ERROR fetching reviews for PR: ', pullRequestNum );
                                     } else {
-                                        let alreadyReviewed = false;
                                         const reviews = JSON.parse( response.body );
+                                        let alreadyReviewed = false;
                                         if ( reviews.length > 0 ) {
                                             for ( i = 0; i < reviews.length; i++ ) {
                                                 const review = reviews[i];
@@ -155,7 +155,7 @@ http.createServer( function (req, res) {
 
                                         // if there are no existing reviews, then create one
                                         if ( ! alreadyReviewed ) {
-                                            const createReviewURL = gitHubReviewsURL + `/${payload.pullRequestNum}/reviews`;
+                                            const createReviewURL = gitHubReviewsURL + `/${pullRequestNum}/reviews`;
                                             const createReviewParameters = {
                                                 commit_id: payload.sha,
                                                 body: 'WordPress Desktop CI Failure: Please Review this PR for breaking changes.',
@@ -168,7 +168,7 @@ http.createServer( function (req, res) {
                                             })
                                             .then( function( response ) {
                                                 if ( response.statusCode !== '200' ) {
-                                                    log.error( 'ERROR creating review for PR: ', payload.pullRequestNum );
+                                                    log.error( 'ERROR creating review for PR: ', pullRequestNum );
                                                 }
                                             } );
                                         }
@@ -176,14 +176,14 @@ http.createServer( function (req, res) {
                                 } );
                             } else if ( payload.status === 'success' ) {
                                 // if payload.status === 'success, delete existing review (if any)
-                                const getReviewsURL = gitHubReviewsURL + `/${payload.pullRequestNum}/reviews`;
+                                const getReviewsURL = gitHubReviewsURL + `/${pullRequestNum}/reviews`;
                                 request.get( {
                                     headers: { Authorization: 'token ' + process.env.GITHUB_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
                                     url: getReviewsURL
                                 } )
                                 .then( function( response ) {
                                     if ( response.statusCode !== '200' ) {
-                                        log.error( 'ERROR fetching reviews for PR: ', payload.pullRequestNum );
+                                        log.error( 'ERROR fetching reviews for PR: ', pullRequestNum );
                                     } else {
                                         const reviews = JSON.parse( response.body );
                                         if ( reviews.length > 0 ) {
@@ -192,12 +192,12 @@ http.createServer( function (req, res) {
                                                 if ( review.user.login === 'matticbot' ) {
                                                     const reviewId = review.id;
 
-                                                    const dismissReviewURL = gitHubReviewsURL + `/${payload.pullRequestNum}/reviews/${reviewId}/dismissals`;
+                                                    const dismissReviewURL = gitHubReviewsURL + `/${pullRequestNum}/reviews/${reviewId}/dismissals`;
 
                                                     request.put( dismissReviewURL )
                                                     .then( function( response ) {
                                                         if ( response.statusCode !== '200' ) {
-                                                            log.error( `Failed to dismiss review for PR: ${ payload.pullRequestNum } with ID: `, reviewId );
+                                                            log.error( `Failed to dismiss review for PR: ${ pullRequestNum } with ID: `, reviewId );
                                                         }
                                                     } );
                                                 }
