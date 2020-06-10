@@ -164,7 +164,7 @@ http.createServer( function (req, res) {
                                             const msg = `WordPress Desktop CI Failure (ci/wp-desktop): ` +
                                                 `@${ pullRequestUserName } please re-try this workflow ("Rerun Workflow from Failed") ` +
                                                 `and/or review this PR for breaking changes. ` +
-                                                `Please also ensure this branch is rebased off the latest Calypso master.`;
+                                                `Please also ensure this branch is rebased off latest Calypso master.`;
                                             const createReviewParameters = {
                                                 commit_id: pullRequestSha,
                                                 body: msg,
