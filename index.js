@@ -150,7 +150,7 @@ http.createServer( function (req, res) {
                                         if ( reviews.length > 0 ) {
                                             for ( i = 0; i < reviews.length; i++ ) {
                                                 const review = reviews[i];
-                                                if ( review.user.login === 'gitHubReviewUsername' && review.state !== 'DISMISSED' ) {
+                                                if ( review.user.login === gitHubReviewUsername && review.state !== 'DISMISSED' ) {
                                                     alreadyReviewed = true;
                                                     break;
                                                 }
@@ -196,7 +196,7 @@ http.createServer( function (req, res) {
                                         if ( reviews.length > 0 ) {
                                             for ( i = 0; i < reviews.length; i++ ) {
                                                 const review = reviews[i];
-                                                if ( review.user.login === 'gitHubReviewUsername' && review.state !== 'DISMISSED' ) {
+                                                if ( review.user.login === gitHubReviewUsername && review.state !== 'DISMISSED' ) {
                                                     const reviewId = review.id;
 
                                                     const dismissReviewURL = gitHubReviewsURL + `/${pullRequestNum}/reviews/${reviewId}/dismissals`;
