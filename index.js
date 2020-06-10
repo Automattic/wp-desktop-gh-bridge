@@ -11,6 +11,8 @@ const flowPatrolOnly = process.env.FLOW_PATROL_ONLY || 'false';
 const flowPatrolUsernames = [ 'alisterscott', 'brbrr', 'bsessions85', 'hoverduck', 'rachelmcr', 'designsimply', 'astralbodies' ];
 const triggerLabel = process.env.TRIGGER_LABEL || '[Status] Needs Review';
 
+const gitHubReviewUsername = 'wp-desktop';
+
 const gitHubStatusURL = `https://api.github.com/repos/${ calypsoProject }/statuses/`;
 const gitHubDesktopBranchURL = `https://api.github.com/repos/${ wpDesktopProject }/branches/`;
 const gitHubDesktopCreateFileURL = `https://api.github.com/repos/${wpDesktopProject}/contents/desktop-canary-bridge.patch`;
@@ -148,7 +150,7 @@ http.createServer( function (req, res) {
                                         if ( reviews.length > 0 ) {
                                             for ( i = 0; i < reviews.length; i++ ) {
                                                 const review = reviews[i];
-                                                if ( review.user.login === 'matticbot' ) {
+                                                if ( review.user.login === 'gitHubReviewUsername' && review.state !== 'DISMISSED' ) {
                                                     alreadyReviewed = true;
                                                     break;
                                                 }
@@ -158,8 +160,12 @@ http.createServer( function (req, res) {
                                         // if there are no existing reviews, then create one
                                         if ( ! alreadyReviewed ) {
                                             const createReviewURL = gitHubReviewsURL + `/${ pullRequestNum }/reviews`;
+                                            const msg = `WordPress Desktop CI Failure (ci/wp-desktop): ` +
+                                                `@${ pullRequestUsername } please re-try this workflow ("Rerun Workflow from Failed") ` +
+                                                `and/or review this PR for breaking changes. ` +
+                                                `Please also ensure this branch is rebased off the latest Calypso master.`;
                                             const createReviewParameters = {
-                                                body: `WordPress Desktop CI Failure (ci/wp-desktop): @${ pullRequestUsername } please re-try this workflow ("Rerun Workflow from Failed") and/or review this PR for breaking changes.`,
+                                                body: msg,
                                                 event: 'REQUEST_CHANGES',
                                             }
                                             request.post( {
@@ -190,7 +196,7 @@ http.createServer( function (req, res) {
                                         if ( reviews.length > 0 ) {
                                             for ( i = 0; i < reviews.length; i++ ) {
                                                 const review = reviews[i];
-                                                if ( review.user.login === 'matticbot' && review.state !== 'DISMISSED' ) {
+                                                if ( review.user.login === 'gitHubReviewUsername' && review.state !== 'DISMISSED' ) {
                                                     const reviewId = review.id;
 
                                                     const dismissReviewURL = gitHubReviewsURL + `/${pullRequestNum}/reviews/${reviewId}/dismissals`;
