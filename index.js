@@ -134,7 +134,7 @@ http.createServer( function (req, res) {
                                 // check for existing reviews
                                 const getReviewsURL = gitHubReviewsURL + `/${ pullRequestNum }/reviews`;
                                 request.get( {
-                                    headers: { Authorization: 'token ' + process.env.GITHUB_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
+                                    headers: { Authorization: 'token ' + process.env.GITHUB_REVIEW_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
                                     url: getReviewsURL
                                 } )
                                 .then( function( response ) {
@@ -161,7 +161,7 @@ http.createServer( function (req, res) {
                                                 event: 'REQUEST_CHANGES',
                                             }
                                             request.post( {
-                                                headers: { Authorization: 'token ' + process.env.GITHUB_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
+                                                headers: { Authorization: 'token ' + process.env.GITHUB_REVIEW_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
                                                 url: createReviewURL,
                                                 body: JSON.stringify(createReviewParameters),
                                             })
@@ -177,7 +177,7 @@ http.createServer( function (req, res) {
                                 // if payload.status === 'success, delete existing review (if any)
                                 const getReviewsURL = gitHubReviewsURL + `/${pullRequestNum}/reviews`;
                                 request.get( {
-                                    headers: { Authorization: 'token ' + process.env.GITHUB_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
+                                    headers: { Authorization: 'token ' + process.env.GITHUB_REVIEW_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
                                     url: getReviewsURL
                                 } )
                                 .then( function( response ) {
@@ -194,7 +194,7 @@ http.createServer( function (req, res) {
                                                     const dismissReviewURL = gitHubReviewsURL + `/${pullRequestNum}/reviews/${reviewId}/dismissals`;
 
                                                     request.put( {
-                                                        headers: { Authorization: 'token ' + process.env.GITHUB_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
+                                                        headers: { Authorization: 'token ' + process.env.GITHUB_REVIEW_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
                                                         url: dismissReviewURL,
                                                         body: JSON.stringify( { message: 'ci/wp-desktop passing, closing review' } ),
                                                     } )
