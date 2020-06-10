@@ -79,7 +79,8 @@ http.createServer( function (req, res) {
                 if ( payload && payload.build_parameters && payload.build_parameters.sha && payload.build_parameters.calypsoProject === calypsoProject ) {
                     let status, desc;
                     const pullRequestNum = payload.build_parameters.pullRequestNum;
-                    const pullRequestUsername = payload.build_parameters.pullRequestUsername;
+                    const pullRequestUserName = payload.build_parameters.pullRequestUserName;
+                    const pullRequestSha = payload.build_parameters.sha;
 
                     if ( payload.outcome === 'success' ) {
                         status = 'success';
@@ -161,10 +162,11 @@ http.createServer( function (req, res) {
                                         if ( ! alreadyReviewed ) {
                                             const createReviewURL = gitHubReviewsURL + `/${ pullRequestNum }/reviews`;
                                             const msg = `WordPress Desktop CI Failure (ci/wp-desktop): ` +
-                                                `@${ pullRequestUsername } please re-try this workflow ("Rerun Workflow from Failed") ` +
+                                                `@${ pullRequestUserName } please re-try this workflow ("Rerun Workflow from Failed") ` +
                                                 `and/or review this PR for breaking changes. ` +
                                                 `Please also ensure this branch is rebased off the latest Calypso master.`;
                                             const createReviewParameters = {
+                                                commit_id: pullRequestSha,
                                                 body: msg,
                                                 event: 'REQUEST_CHANGES',
                                             }
