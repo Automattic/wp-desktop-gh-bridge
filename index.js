@@ -6,7 +6,7 @@ const { logger } = require( '@automattic/vip-go' );
 
 const calypsoProject = process.env.CALYPSO_PROJECT || 'Automattic/wp-calypso';
 const wpDesktopProject = process.env.DESKTOP_PROJECT || 'Automattic/wp-desktop';
-const flowPatrolOnly = process.env.FLOW_PATROL_ONLY || 'false';
+const flowPatrolOnly = 'false';
 
 const flowPatrolUsernames = [ 'alisterscott', 'brbrr', 'bsessions85', 'hoverduck', 'rachelmcr', 'designsimply', 'astralbodies' ];
 const triggerLabel = process.env.TRIGGER_LABEL || '[Status] Needs Review';
