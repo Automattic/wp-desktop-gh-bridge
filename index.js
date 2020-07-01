@@ -3,6 +3,7 @@ const rp = require ( 'request-promise-native' );
 const createHandler = require ( 'github-webhook-handler' );
 const url = require( 'url' );
 const { logger } = require( '@automattic/vip-go' );
+const { promisify } = require( 'util' );
 
 const calypsoProject = process.env.CALYPSO_PROJECT || 'Automattic/wp-calypso';
 const wpDesktopProject = process.env.DESKTOP_PROJECT || 'Automattic/wp-desktop';
@@ -25,6 +26,8 @@ const circleCIWorkflowURL = 'https://circleci.com/workflow-run/';
 const gitHubWebHookPath = '/ghwebhook';
 const circleCIWebHookPath = '/circleciwebhook';
 const healthCheckPath = '/cache-healthcheck';
+
+const delay = promisify( setTimeout );
 
 // Helper to generate randomized content patches
 function makeRandom(length) {
@@ -138,6 +141,8 @@ http.createServer( function (req, res) {
                             if ( payload.status === 'failed' ) {
                                 // check for existing reviews
                                 const getReviewsURL = gitHubReviewsURL + `/${ pullRequestNum }/reviews`;
+                                await delay( 5000 );
+
                                 request.get( {
                                     headers: { Authorization: 'token ' + process.env.GITHUB_REVIEW_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
                                     url: getReviewsURL
