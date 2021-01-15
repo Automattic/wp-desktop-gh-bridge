@@ -131,7 +131,7 @@ http.createServer( function (req, res) {
                         url: gitHubStatusURL + payload.build_parameters.sha,
                         body: JSON.stringify( gitHubStatus )
                     } )
-                    .then( function( response ) {
+                    .then( async function( response ) {
                         if ( response.statusCode !== 201 ) {
                             log.error( 'ERROR: ' + response.body );
                         } else {
@@ -154,7 +154,7 @@ http.createServer( function (req, res) {
                                         const reviews = JSON.parse( response.body );
                                         let alreadyReviewed = false;
                                         if ( reviews.length > 0 ) {
-                                            for ( i = 0; i < reviews.length; i++ ) {
+                                            for ( let i = 0; i < reviews.length; i++ ) {
                                                 const review = reviews[i];
                                                 if ( review.user.login === gitHubReviewUsername && review.state !== 'DISMISSED' ) {
                                                     alreadyReviewed = true;
@@ -174,7 +174,7 @@ http.createServer( function (req, res) {
                                                 commit_id: pullRequestSha,
                                                 body: msg,
                                                 event: 'REQUEST_CHANGES',
-                                            }
+                                            };
                                             request.post( {
                                                 headers: { Authorization: 'token ' + process.env.GITHUB_REVIEW_SECRET, 'User-Agent': 'wp-desktop-gh-bridge' },
                                                 url: createReviewURL,
@@ -201,7 +201,7 @@ http.createServer( function (req, res) {
                                     } else {
                                         const reviews = JSON.parse( response.body );
                                         if ( reviews.length > 0 ) {
-                                            for ( i = 0; i < reviews.length; i++ ) {
+                                            for ( let i = 0; i < reviews.length; i++ ) {
                                                 const review = reviews[i];
                                                 if ( review.user.login === gitHubReviewUsername && review.state !== 'DISMISSED' ) {
                                                     const reviewId = review.id;
