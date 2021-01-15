@@ -131,7 +131,7 @@ http.createServer( function (req, res) {
                         url: gitHubStatusURL + payload.build_parameters.sha,
                         body: JSON.stringify( gitHubStatus )
                     } )
-                    .then( function( response ) {
+                    .then( async function( response ) {
                         if ( response.statusCode !== 201 ) {
                             log.error( 'ERROR: ' + response.body );
                         } else {
