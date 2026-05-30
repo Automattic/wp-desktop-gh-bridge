@@ -5,15 +5,20 @@
   "main": "index.js",
   "dependencies": {
     "@automattic/vip-go": "0.2.1",
-    "github-webhook-handler": "0.6.0",
-    "request": "^2.87.0",
-    "request-promise-native": "1.0.5"
+    "github-webhook-handler": "1.0.0",
+    "node-fetch": "^2.7.0"
+  },
+  "overrides": {
+    "@dabh/diagnostics": "2.0.2",
+    "async": "2.6.4",
+    "color-string": "1.5.5",
+    "winston": "3.3.3"
   },
   "devDependencies": {},
   "scripts": {
     "start": "node index.js",
     "build": "echo built",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --check index.js"
   },
   "repository": {
     "type": "git",
@@ -26,6 +31,6 @@
   },
   "homepage": "https://github.com/Automattic/wp-desktop-gh-bridge#readme",
   "engines": {
-    "node": "8.11.2"
+    "node": ">=8.11.2"
   }
 }
