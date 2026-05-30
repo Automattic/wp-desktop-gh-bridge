@@ -1,7 +1,6 @@
 const http = require ( 'http' );
-const rp = require ( 'request-promise-native' );
+const fetch = require( 'node-fetch' );
 const createHandler = require ( 'github-webhook-handler' );
-const url = require( 'url' );
 const { logger } = require( '@automattic/vip-go' );
 const { promisify } = require( 'util' );
 
@@ -48,10 +47,46 @@ const prContext = 'ci/wp-desktop';
 
 const log = logger( 'wp-desktop-gh-bridge:webhook' );
 const handler = createHandler( { path: gitHubWebHookPath, secret: process.env.BRIDGE_SECRET } );
-const request = rp.defaults( {
-    simple:false,
-    resolveWithFullResponse: true
-} );
+
+function normalizeResponse( response, body ) {
+    return {
+        body,
+        headers: response.headers.raw(),
+        statusCode: response.status
+    };
+}
+
+function requestWithResponse( method, options, callback ) {
+    const headers = Object.assign( {}, options.headers );
+
+    if ( options.auth && options.auth.username ) {
+        const password = options.auth.password || '';
+        headers.Authorization = 'Basic ' + Buffer.from( `${ options.auth.username }:${ password }` ).toString( 'base64' );
+    }
+
+    const responsePromise = fetch( options.url, {
+        body: options.body,
+        headers,
+        method
+    } ).then( async response => normalizeResponse( response, await response.text() ) );
+
+    if ( callback ) {
+        return responsePromise.then(
+            response => callback( null, response, response.body ),
+            error => callback( error, null, null )
+        );
+    }
+
+    return responsePromise;
+}
+
+const request = {
+    delete: ( options, callback ) => requestWithResponse( 'DELETE', options, callback ),
+    get: ( options, callback ) => requestWithResponse( 'GET', options, callback ),
+    patch: ( options, callback ) => requestWithResponse( 'PATCH', options, callback ),
+    post: ( options, callback ) => requestWithResponse( 'POST', options, callback ),
+    put: ( options, callback ) => requestWithResponse( 'PUT', options, callback )
+};
 
 function sleep( ms ) {
     return new Promise( resolve=>{
